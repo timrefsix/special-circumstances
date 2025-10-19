@@ -45,3 +45,25 @@
 2. Sketch core TypeScript modules: `MachineFrame`, `ModuleRegistry`, `CpuModule`, `MemoryModule`, and message bus abstractions.
 3. Implement a minimal UI to mount modules and run a sample script controlling a basic actuator to validate the loop.
 4. Add automated tests for module lifecycle, message passing, and CPU-to-memory contracts to ensure stability.
+
+## Phase 1 Plan
+- **User Story 1 – View the world layout**: As a player, I can load the main screen and immediately understand where the world and information live.
+  - Task: Scaffold the base layout with a world viewport on the left and a right-hand panel shell that can collapse/expand.
+  - Task: Persist the panel’s collapsed state across page reloads (simple local storage or URL param).
+  - Task: Add Playwright coverage that verifies the layout renders and the panel toggles.
+- **User Story 2 – See entities in the world**: As a player, I can see a simple representation of entities positioned in the world viewport.
+  - Task: Provide a lightweight entity data stub (id, name, position, status) sourced from the module registry or mock runtime feed.
+  - Task: Render entities with selectable affordances in the viewport and highlight the active selection.
+  - Task: Add Playwright coverage that checks multiple entities render and selection highlight updates.
+- **User Story 3 – Inspect entity details**: As a player, I can click an entity and review key module metadata and live state in the panel.
+  - Task: Bind selection events to update the panel with module/category summaries pulled from the stub data.
+  - Task: Show placeholder sections for lifecycle hooks, telemetry, and actions to align with future module APIs.
+  - Task: Add Playwright coverage that selects an entity, confirms the panel updates, and asserts collapse state persists.
+- **User Story 4 – Keep updates flowing**: As a player, I see the world and panel stay in sync with basic tick updates.
+  - Task: Implement a deterministic tick loop that nudges entity state (position/status) and emits update events.
+  - Task: Wire the viewport and panel to react to tick updates without breaking selection context.
+  - Task: Add Playwright coverage that steps the simulation (manual trigger or mocked timer) and verifies the UI responds.
+- **User Story 5 – Ship ready-to-iterate build**: As a teammate, I get a stable baseline to extend with real modules and scripting.
+  - Task: Document layout architecture, selection data flow, and test commands in `README` or `TESTING.md`.
+  - Task: Ensure lint/build/test scripts run clean in CI (configure Playwright in the existing pipeline).
+  - Task: Record open follow-ups (e.g., real VM integration, visual polish) as tickets before declaring Phase 1 done.

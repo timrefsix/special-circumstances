@@ -1,0 +1,197 @@
+:root {
+  color-scheme: light dark;
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+html,
+body,
+#app {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: radial-gradient(circle at top, #1e293b 0%, #0f172a 60%, #020617 100%);
+  color: #f1f5f9;
+}
+
+main.app-shell {
+  --panel-width: 320px;
+  display: flex;
+  height: 100%;
+  position: relative;
+}
+
+.world-view {
+  flex: 1;
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 2rem;
+}
+
+.world-view::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: min(85%, 960px);
+  height: min(85%, 960px);
+  border-radius: 32px;
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  background: rgba(15, 23, 42, 0.7);
+  backdrop-filter: blur(6px);
+}
+
+.world-placeholder {
+  position: relative;
+  z-index: 1;
+  font-size: 1.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  opacity: 0.7;
+}
+
+.panel-edge {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 22px;
+  min-width: 22px;
+  z-index: 2;
+}
+
+.panel-edge.collapsed {
+  justify-content: center;
+}
+
+.panel-resize-handle {
+  width: 8px;
+  height: 60%;
+  cursor: col-resize;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: transparent;
+  transition: background-color 180ms ease;
+}
+
+.panel-resize-handle::after {
+  content: '';
+  width: 2px;
+  height: 100%;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.35);
+}
+
+.panel-resize-handle:hover {
+  background: rgba(59, 130, 246, 0.12);
+}
+
+.panel-resize-handle:active {
+  background: rgba(59, 130, 246, 0.2);
+}
+
+.panel-resize-handle.is-inactive {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.panel-toggle {
+  position: absolute;
+  top: 50%;
+  right: -1.4rem;
+  transform: translateY(-50%);
+  width: 2rem;
+  height: 2rem;
+  border-radius: 999px;
+  border: 1px solid rgba(59, 130, 246, 0.5);
+  background: rgba(59, 130, 246, 0.2);
+  color: #bfdbfe;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 200ms ease, border-color 200ms ease, color 200ms ease;
+}
+
+.panel-toggle:hover {
+  background: rgba(59, 130, 246, 0.28);
+  border-color: rgba(59, 130, 246, 0.6);
+}
+
+.panel-toggle:focus-visible {
+  outline: 2px solid rgba(96, 165, 250, 0.8);
+  outline-offset: 2px;
+}
+
+.panel-toggle::before {
+  content: '';
+  display: block;
+  width: 0;
+  height: 0;
+  border-top: 0.35rem solid transparent;
+  border-bottom: 0.35rem solid transparent;
+  border-left: 0.5rem solid currentColor;
+  transition: transform 200ms ease;
+}
+
+.panel-toggle[aria-expanded='false']::before {
+  transform: rotate(180deg);
+}
+
+.panel-edge.collapsed .panel-toggle {
+  right: -0.2rem;
+}
+
+.info-panel {
+  flex: 0 0 var(--panel-width);
+  min-width: var(--panel-width);
+  background: rgba(15, 23, 42, 0.9);
+  border-left: 1px solid rgba(148, 163, 184, 0.15);
+  display: flex;
+  flex-direction: column;
+  transition: flex-basis 200ms ease, min-width 200ms ease;
+  overflow: hidden;
+}
+
+.info-panel.collapsed {
+  flex-basis: 0;
+  min-width: 0;
+  border-left: none;
+  pointer-events: none;
+}
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 1rem;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.15);
+}
+
+.panel-title {
+  font-size: 1rem;
+  margin: 0;
+}
+
+.panel-body {
+  flex: 1;
+  padding: 1rem;
+  overflow-y: auto;
+  font-size: 0.95rem;
+}
+
+.info-panel.collapsed .panel-body,
+.info-panel.collapsed .panel-header {
+  display: none;
+}
+
+.world-view,
+.panel-body {
+  scrollbar-width: thin;
+}
