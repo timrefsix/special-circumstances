@@ -1,10 +1,15 @@
+x-dev-host: &app_host "${COMPOSE_PROJECT_NAME}.localhost"
+x-router-rule: &router_rule "traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=Host(`${COMPOSE_PROJECT_NAME}.localhost`)"
+x-router-entrypoints: &router_entrypoints "traefik.http.routers.${COMPOSE_PROJECT_NAME}.entrypoints=web"
+x-service-port: &service_port "traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=5173"
+
 services:
   app:
     image: node:20
     working_dir: /workspace
     command: bash -lc "npm install && npm run dev -- --host=0.0.0.0 --port=5173 --strictPort"
     environment:
-      - VITE_DEV_HOST=special-circumstances-scripting.localhost
+      - VITE_DEV_HOST=*app_host
       - VITE_DEV_PORT=5173
       - CHOKIDAR_USEPOLLING=1
     volumes:
@@ -12,9 +17,9 @@ services:
       - node_modules_cache:/workspace/node_modules
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.special-circumstances-scripting.rule=Host(`special-circumstances-scripting.localhost`)"
-      - "traefik.http.routers.special-circumstances-scripting.entrypoints=web"
-      - "traefik.http.services.special-circumstances-scripting.loadbalancer.server.port=5173"
+      - *router_rule
+      - *router_entrypoints
+      - *service_port
     networks:
       - devproxy
 
