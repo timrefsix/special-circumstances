@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { PointerEvent as ReactPointerEvent } from 'react';
-import { mockEntities } from './data/mockEntities';
+import { createWorldWithMockEntities, Identity, Position, Status, useEcsQuery } from './ecs';
 import type { WorldEntity } from './types/entity';
 
 const PANEL_STORAGE_KEY = 'ui.panelCollapsed';
@@ -54,11 +54,24 @@ const App = () => {
   const resizeStartXRef = useRef(0);
   const resizeStartWidthRef = useRef(DEFAULT_PANEL_WIDTH);
 
+  const world = useMemo(() => createWorldWithMockEntities(), []);
+  const entityComponents = useMemo(() => [Identity, Position, Status] as const, []);
+  const entities = useEcsQuery(
+    world,
+    entityComponents,
+    (_, identity, position, status): WorldEntity => ({
+      id: identity.id,
+      name: identity.name,
+      position: { x: position.x, y: position.y },
+      status: status.value,
+    }),
+  );
+
   const [collapsed, setCollapsed] = useState(() => readCollapsedState());
   const [panelWidth, setPanelWidth] = useState(() => clampWidth(readPanelWidth()));
-  const [entities] = useState<WorldEntity[]>(() => mockEntities);
   const [selectedEntityId, setSelectedEntityId] = useState<string | null>(() => {
-    return mockEntities.length > 0 ? mockEntities[0]!.id : null;
+    const seed = world.query([Identity] as const);
+    return seed.length > 0 ? seed[0]![1].id : null;
   });
 
   const panelWidthForStyle = useMemo(() => (collapsed ? 0 : panelWidth), [collapsed, panelWidth]);

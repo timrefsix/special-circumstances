@@ -1,0 +1,169 @@
+export type Entity = number;
+
+export interface ComponentType<T> {
+  readonly name: string;
+  readonly key: symbol;
+}
+
+type ComponentTuple<T extends readonly ComponentType<any>[]> = {
+  [K in keyof T]: T[K] extends ComponentType<infer C> ? C : never;
+};
+
+type Listener = () => void;
+
+export const defineComponent = <T>(name: string): ComponentType<T> => {
+  return {
+    name,
+    key: Symbol(name),
+  };
+};
+
+export class World {
+  private nextEntityId = 1;
+  private readonly componentStores = new Map<symbol, Map<Entity, unknown>>();
+  private readonly entityComponents = new Map<Entity, Set<symbol>>();
+  private readonly listeners = new Set<Listener>();
+  private version = 0;
+
+  createEntity(): Entity {
+    const entity = this.nextEntityId;
+    this.nextEntityId += 1;
+    this.entityComponents.set(entity, new Set());
+    this.emitChange();
+    return entity;
+  }
+
+  destroyEntity(entity: Entity) {
+    const components = this.entityComponents.get(entity);
+    if (!components) {
+      return;
+    }
+
+    for (const componentKey of components) {
+      const store = this.componentStores.get(componentKey);
+      store?.delete(entity);
+    }
+
+    this.entityComponents.delete(entity);
+    this.emitChange();
+  }
+
+  addComponent<T>(entity: Entity, componentType: ComponentType<T>, data: T) {
+    this.assertEntityExists(entity);
+    const store = this.ensureStore(componentType);
+    const existing = store.get(entity);
+
+    if (existing && Object.is(existing, data)) {
+      return;
+    }
+
+    store.set(entity, data);
+    this.entityComponents.get(entity)?.add(componentType.key);
+    this.emitChange();
+  }
+
+  removeComponent<T>(entity: Entity, componentType: ComponentType<T>) {
+    this.assertEntityExists(entity);
+
+    const store = this.componentStores.get(componentType.key);
+    if (!store || !store.has(entity)) {
+      return;
+    }
+
+    store.delete(entity);
+    const components = this.entityComponents.get(entity);
+    components?.delete(componentType.key);
+    this.emitChange();
+  }
+
+  getComponent<T>(entity: Entity, componentType: ComponentType<T>): T | null {
+    const store = this.componentStores.get(componentType.key);
+    if (!store) {
+      return null;
+    }
+
+    const component = store.get(entity);
+    return (component ?? null) as T | null;
+  }
+
+  hasComponent<T>(entity: Entity, componentType: ComponentType<T>): boolean {
+    const components = this.entityComponents.get(entity);
+    return components?.has(componentType.key) ?? false;
+  }
+
+  query<T extends readonly ComponentType<any>[]>(
+    componentTypes: T,
+  ): Array<[Entity, ...ComponentTuple<T>]> {
+    if (componentTypes.length === 0) {
+      return [];
+    }
+
+    const [primaryType, ...restTypes] = componentTypes;
+    const primaryStore = this.ensureStore(primaryType);
+    const results: Array<[Entity, ...ComponentTuple<T>]> = [];
+
+    for (const [entity, primaryComponent] of primaryStore.entries()) {
+      if (!this.entityComponents.has(entity)) {
+        continue;
+      }
+
+      const tuple: unknown[] = [entity, primaryComponent];
+      let matchesAll = true;
+
+      for (const type of restTypes) {
+        const store = this.ensureStore(type);
+        if (!store.has(entity)) {
+          matchesAll = false;
+          break;
+        }
+
+        tuple.push(store.get(entity));
+      }
+
+      if (matchesAll) {
+        results.push(tuple as [Entity, ...ComponentTuple<T>]);
+      }
+    }
+
+    return results;
+  }
+
+  subscribe(listener: Listener): () => void {
+    this.listeners.add(listener);
+    return () => {
+      this.listeners.delete(listener);
+    };
+  }
+
+  getVersion(): number {
+    return this.version;
+  }
+
+  private ensureStore<T>(componentType: ComponentType<T>) {
+    const existing = this.componentStores.get(componentType.key);
+    if (existing) {
+      return existing as Map<Entity, T>;
+    }
+
+    const store = new Map<Entity, T>();
+    this.componentStores.set(componentType.key, store);
+    return store;
+  }
+
+  private assertEntityExists(entity: Entity) {
+    if (!this.entityComponents.has(entity)) {
+      throw new Error(`Entity ${entity} does not exist in this world.`);
+    }
+  }
+
+  private emitChange() {
+    this.version += 1;
+    if (this.listeners.size === 0) {
+      return;
+    }
+
+    for (const listener of this.listeners) {
+      listener();
+    }
+  }
+}
