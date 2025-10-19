@@ -17,6 +17,8 @@ test('world layout renders, panel resizes, and collapse state persists', async (
   const panel = page.getByTestId('info-panel');
   const toggle = page.getByTestId('panel-toggle');
   const handle = page.getByTestId('panel-resize-handle');
+  const selectionName = page.getByTestId('selection-name');
+  const selectionStatus = page.getByTestId('selection-status');
 
   await expect(shell).toBeVisible();
   await expect(world).toBeVisible();
@@ -28,6 +30,19 @@ test('world layout renders, panel resizes, and collapse state persists', async (
 
   const initialWidth = await getPanelWidth(panel);
   expect(initialWidth).toBeGreaterThan(200);
+
+  const entities = page.getByTestId('world-entity');
+  await expect(entities).toHaveCount(3);
+  await expect(entities.nth(0)).toHaveClass(/is-selected/);
+  await expect(selectionName).toHaveText('Alpha Runner');
+  await expect(selectionStatus).toHaveText('moving');
+
+  await entities.nth(1).click();
+
+  await expect(entities.nth(1)).toHaveClass(/is-selected/);
+  await expect(entities.nth(0)).not.toHaveClass(/is-selected/);
+  await expect(selectionName).toHaveText('Bravo Scout');
+  await expect(selectionStatus).toHaveText('idle');
 
   const handleBox = await handle.boundingBox();
   if (!handleBox) {
@@ -67,6 +82,18 @@ test('world layout renders, panel resizes, and collapse state persists', async (
   await expect(toggle).toHaveAttribute('aria-expanded', 'true');
   await expect(toggle).toHaveAttribute('aria-label', 'Collapse details panel');
 
+  const firstEntity = entities.nth(0);
+  const firstBox = await firstEntity.boundingBox();
+  if (!firstBox) {
+    throw new Error('First entity bounding box not found');
+  }
+
+  await page.mouse.move(firstBox.x + firstBox.width / 2, firstBox.y + firstBox.height / 2);
+  await page.mouse.move(firstBox.x + firstBox.width - 4, firstBox.y + firstBox.height - 4);
+
+  const isHovering = await firstEntity.evaluate((node) => node.matches(':hover'));
+  expect(isHovering).toBe(true);
+
   await page.waitForTimeout(260);
   const widthAfterExpand = await getPanelWidth(panel);
   expect(widthAfterExpand).toBeGreaterThan(initialWidth + 30);
@@ -99,4 +126,10 @@ test('world layout renders, panel resizes, and collapse state persists', async (
   const widthAfterReloadExpand = await getPanelWidth(panelAfterReload);
   expect(widthAfterReloadExpand).toBeGreaterThan(initialWidth + 30);
   expect(Math.abs(widthAfterReloadExpand - persistedWidth)).toBeLessThanOrEqual(tolerance);
+
+  const entitiesAfterReload = page.getByTestId('world-entity');
+  await expect(entitiesAfterReload).toHaveCount(3);
+  await expect(entitiesAfterReload.nth(0)).toHaveClass(/is-selected/);
+  await expect(page.getByTestId('selection-name')).toHaveText('Alpha Runner');
+  await expect(page.getByTestId('selection-status')).toHaveText('moving');
 });

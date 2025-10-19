@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { PointerEvent as ReactPointerEvent } from 'react';
+import { mockEntities } from './data/mockEntities';
+import type { WorldEntity } from './types/entity';
 
 const PANEL_STORAGE_KEY = 'ui.panelCollapsed';
 const PANEL_WIDTH_STORAGE_KEY = 'ui.panelWidth';
@@ -54,8 +56,19 @@ const App = () => {
 
   const [collapsed, setCollapsed] = useState(() => readCollapsedState());
   const [panelWidth, setPanelWidth] = useState(() => clampWidth(readPanelWidth()));
+  const [entities] = useState<WorldEntity[]>(() => mockEntities);
+  const [selectedEntityId, setSelectedEntityId] = useState<string | null>(() => {
+    return mockEntities.length > 0 ? mockEntities[0]!.id : null;
+  });
 
   const panelWidthForStyle = useMemo(() => (collapsed ? 0 : panelWidth), [collapsed, panelWidth]);
+  const selectedEntity = useMemo(() => {
+    if (!selectedEntityId) {
+      return null;
+    }
+
+    return entities.find((entity) => entity.id === selectedEntityId) ?? null;
+  }, [entities, selectedEntityId]);
 
   useEffect(() => {
     const shell = shellRef.current;
@@ -182,10 +195,41 @@ const App = () => {
   const handleClassName = collapsed ? 'panel-resize-handle is-inactive' : 'panel-resize-handle';
   const panelClassName = collapsed ? 'info-panel collapsed' : 'info-panel';
 
+  const handleEntitySelect = useCallback((entityId: string) => {
+    setSelectedEntityId(entityId);
+  }, []);
+
+  const renderEntity = (entity: WorldEntity) => {
+    const isSelected = entity.id === selectedEntityId;
+    const statusClass = `entity-node status-${entity.status}`;
+    const className = isSelected ? `${statusClass} is-selected` : statusClass;
+
+    return (
+      <button
+        key={entity.id}
+        type="button"
+        className={className}
+        style={{
+          left: `${entity.position.x}%`,
+          top: `${entity.position.y}%`,
+        }}
+        data-testid="world-entity"
+        data-entity-id={entity.id}
+        aria-pressed={isSelected}
+        onClick={() => handleEntitySelect(entity.id)}
+      >
+        <span className="entity-node__label">{entity.name}</span>
+      </button>
+    );
+  };
+
   return (
     <main ref={shellRef} className="app-shell" data-testid="app-shell">
       <section className="world-view" aria-label="World viewport" data-testid="world-view">
-        <span className="world-placeholder">World</span>
+        <div className="world-surface" data-testid="world-surface">
+          <div className="world-grid" aria-hidden="true" />
+          {entities.map(renderEntity)}
+        </div>
       </section>
       <div className={edgeClassName} data-testid="panel-edge">
         <div
@@ -218,10 +262,18 @@ const App = () => {
         </header>
         <section className="panel-body" id="panel-body">
           <p>Choose an entity in the world to inspect its modules and runtime state.</p>
-          <dl>
+          <dl className="panel-selection">
             <dt>Selection</dt>
-            <dd>No entity selected.</dd>
+            <dd data-testid="selection-name">
+              {selectedEntity ? selectedEntity.name : 'No entity selected.'}
+            </dd>
           </dl>
+          {selectedEntity ? (
+            <dl className="panel-selection">
+              <dt>Status</dt>
+              <dd data-testid="selection-status">{selectedEntity.status}</dd>
+            </dl>
+          ) : null}
         </section>
       </aside>
     </main>
