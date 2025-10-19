@@ -12,12 +12,12 @@ const pickFirstEntity = (world: ReturnType<typeof createWorldWithMockEntities>) 
 };
 
 describe('Bot scripting integration', () => {
-  it('runs a composite script against a simulated entity', () => {
+  it('runs a composite script against a simulated entity', async () => {
     const world = createWorldWithMockEntities({ instrumentation: false });
     const entity = pickFirstEntity(world);
-    const env = createBotScriptEnvironment(world, entity);
+    const env = createBotScriptEnvironment(world, entity, { durationScale: 0 });
 
-    env.engine.execute(`
+    await env.engine.execute(`
       motor.forward(10)
       motor.left(90)
       motor.forward(5)

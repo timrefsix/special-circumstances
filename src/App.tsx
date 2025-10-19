@@ -156,9 +156,11 @@ const App = () => {
     return botScripts[selectedEntityId] ?? createDefaultBotScriptState();
   }, [botScripts, selectedEntityId]);
 
+  const isScriptRunning = selectedScriptState?.lastRun.status === 'running';
   const canRunScript =
     Boolean(selectedEntityHandle) &&
-    Boolean(selectedScriptState && selectedScriptState.source.trim().length > 0);
+    Boolean(selectedScriptState && selectedScriptState.source.trim().length > 0) &&
+    !isScriptRunning;
 
   useEffect(() => {
     const shell = shellRef.current;
@@ -220,11 +222,13 @@ const App = () => {
     });
   }, []);
 
-  const handleRunBotScript = useCallback(() => {
+  const handleRunBotScript = useCallback(async () => {
     if (!selectedEntityId || !selectedEntityHandle || !selectedScriptState) {
       return;
     }
 
+    const targetEntityId = selectedEntityId;
+    const targetHandle = selectedEntityHandle;
     const source = selectedScriptState.source;
     const trimmed = source.trim();
 
@@ -232,7 +236,7 @@ const App = () => {
       const timestamp = Date.now();
       setBotScripts((current) => ({
         ...current,
-        [selectedEntityId]: {
+        [targetEntityId]: {
           source,
           lastRun: {
             status: 'error',
@@ -244,16 +248,36 @@ const App = () => {
       return;
     }
 
-    try {
-      const environment = createBotScriptEnvironment(world, selectedEntityHandle);
-      environment.engine.execute(source);
+    const runTimestamp = Date.now();
+    setBotScripts((current) => ({
+      ...current,
+      [targetEntityId]: {
+        source,
+        lastRun: {
+          status: 'running',
+          timestamp: runTimestamp,
+        },
+      },
+    }));
 
-      const positionComponent = world.getComponent(selectedEntityHandle, Position);
+    try {
+      const environment = createBotScriptEnvironment(world, targetHandle);
+      const runStart = typeof performance !== 'undefined' && typeof performance.now === 'function'
+        ? performance.now()
+        : Date.now();
+      await environment.engine.execute(source);
+      const runEnd = typeof performance !== 'undefined' && typeof performance.now === 'function'
+        ? performance.now()
+        : Date.now();
+      if (typeof window !== 'undefined') {
+        (window as any).__lastBotRunDuration = runEnd - runStart;
+      }
+
+      const positionComponent = world.getComponent(targetHandle, Position);
       if (!positionComponent) {
         throw new Error('Position component is missing after script execution.');
       }
 
-      const timestamp = Date.now();
       const heading = environment.modules.motor.getHeading();
       const debugSnapshot = {
         penDown: environment.modules.debug.isPenDown(),
@@ -263,11 +287,11 @@ const App = () => {
 
       setBotScripts((current) => ({
         ...current,
-        [selectedEntityId]: {
+        [targetEntityId]: {
           source,
           lastRun: {
             status: 'success',
-            timestamp,
+            timestamp: Date.now(),
             heading,
             position: { x: positionComponent.x, y: positionComponent.y },
             debug: debugSnapshot,
@@ -275,17 +299,16 @@ const App = () => {
         },
       }));
     } catch (error) {
-      const timestamp = Date.now();
       const message =
         error instanceof Error ? error.message : 'Unknown error while running the script.';
 
       setBotScripts((current) => ({
         ...current,
-        [selectedEntityId]: {
+        [targetEntityId]: {
           source,
           lastRun: {
             status: 'error',
-            timestamp,
+            timestamp: Date.now(),
             message,
           },
         },

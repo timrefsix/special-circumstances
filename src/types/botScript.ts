@@ -2,6 +2,7 @@ import type { DebugSnapshot } from '../scripting/modules/debug';
 
 export type BotScriptRunResult =
   | { status: 'idle' }
+  | { status: 'running'; timestamp: number }
   | {
       status: 'success';
       timestamp: number;

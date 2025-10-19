@@ -15,9 +15,9 @@ const setupFrame = () => {
 };
 
 describe('MachineFrame', () => {
-  it('installs machine modules and registers their script APIs', () => {
+  it('installs machine modules and registers their script APIs', async () => {
     const { world, entity, frame } = setupFrame();
-    const motor = new MotorMachineModule();
+    const motor = new MotorMachineModule({ durationScale: 0 });
     const debug = new DebugMachineModule();
 
     frame.installModule(motor);
@@ -26,7 +26,7 @@ describe('MachineFrame', () => {
     const engine = new ScriptEngine();
     frame.registerApis(engine);
 
-    engine.execute('motor.forward(5); debug.pen(true); debug.color(#00ff00)');
+    await engine.execute('motor.forward(5); debug.pen(true); debug.color(#00ff00)');
 
     const position = world.getComponent(entity, Position);
     expect(position?.y).toBeCloseTo(5);

@@ -10,19 +10,19 @@ describe('DebugScriptModule', () => {
     return { module, engine };
   };
 
-  it('tracks pen state and color changes', () => {
+  it('tracks pen state and color changes', async () => {
     const { module, engine } = setup();
 
-    engine.execute('debug.pen(true); debug.color(#112233)');
+    await engine.execute('debug.pen(true); debug.color(#112233)');
 
     expect(module.isPenDown()).toBe(true);
     expect(module.getColor()).toBe('#112233');
     expect(module.getHistory()).toEqual(['pen(true)', 'color(#112233)']);
   });
 
-  it('exposes a snapshot of the current state', () => {
+  it('exposes a snapshot of the current state', async () => {
     const { module, engine } = setup();
-    engine.execute('debug.pen(true); debug.color(#abc)');
+    await engine.execute('debug.pen(true); debug.color(#abc)');
     expect(module.snapshot()).toEqual({ penDown: true, color: '#abc', history: ['pen(true)', 'color(#abc)'] });
   });
 
@@ -31,10 +31,10 @@ describe('DebugScriptModule', () => {
     expect(() => engine.execute('debug.color(red)')).toThrow(ScriptSyntaxError);
   });
 
-  it('caps history length to 50 entries', () => {
+  it('caps history length to 50 entries', async () => {
     const { module, engine } = setup();
     const commands = Array.from({ length: 55 }, (_, index) => `debug.pen(${index % 2 === 0 ? 'true' : 'false'})`).join(';');
-    engine.execute(commands);
+    await engine.execute(commands);
     expect(module.getHistory()).toHaveLength(50);
   });
 });

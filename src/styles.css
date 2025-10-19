@@ -508,6 +508,10 @@ main.app-shell {
   color: rgba(74, 222, 128, 0.95);
 }
 
+.script-console__status--running {
+  color: rgba(96, 165, 250, 0.95);
+}
+
 .script-console__status--error {
   color: rgba(248, 113, 113, 0.95);
 }

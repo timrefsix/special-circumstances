@@ -30,7 +30,7 @@ export type ModuleFunctionResolvedArgument =
 export interface ScriptModuleFunction {
   readonly name: string;
   readonly parameters: ModuleFunctionParameter[];
-  invoke(args: ModuleFunctionResolvedArgument[], meta: ModuleInvocationMeta): void;
+  invoke(args: ModuleFunctionResolvedArgument[], meta: ModuleInvocationMeta): void | Promise<void>;
 }
 
 export interface ScriptModule {
@@ -105,6 +105,9 @@ export class ScriptEngine {
   private readonly modules = new Map<string, ScriptModule>();
 
   constructor(modules: ScriptModule[] = []) {
+    if (typeof window !== 'undefined') {
+      (window as any).__scriptEngineAsync = true;
+    }
     for (const module of modules) {
       this.registerModule(module);
     }
@@ -130,18 +133,18 @@ export class ScriptEngine {
     return compileProgramNode(program);
   }
 
-  execute(source: string) {
+  execute(source: string): Promise<void> {
     const commands = this.compile(source);
-    this.executeCommands(commands);
+    return this.executeCommands(commands);
   }
 
-  executeCommands(commands: Command[]) {
+  async executeCommands(commands: Command[]): Promise<void> {
     for (const command of commands) {
-      this.executeCommand(command);
+      await this.executeCommand(command);
     }
   }
 
-  private executeCommand(command: Command) {
+  private async executeCommand(command: Command): Promise<void> {
     const module = this.modules.get(command.module);
     if (!module) {
       throw new ScriptRuntimeError(
@@ -181,7 +184,7 @@ export class ScriptEngine {
       resolveArgument(fn.parameters[index]!, arg, { module: module.name, method: fn.name }),
     );
 
-    fn.invoke(resolvedArgs, {
+    await fn.invoke(resolvedArgs, {
       module: module.name,
       method: fn.name,
       location: command.location,

@@ -74,6 +74,14 @@ export const BotScriptConsole = ({
       };
     }
 
+    if (status.status === 'running') {
+      return {
+        statusLabel: `Running… · ${formatTime(status.timestamp)}`,
+        statusClass: 'script-console__status script-console__status--running',
+        detailItems: [],
+      };
+    }
+
     return {
       statusLabel: `Write a script for ${entityName} and run it to see results.`,
       statusClass: 'script-console__status',

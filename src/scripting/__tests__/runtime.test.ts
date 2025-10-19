@@ -27,11 +27,11 @@ class RecordingModule extends BaseScriptModule {
 }
 
 describe('ScriptEngine', () => {
-  it('invokes registered module functions in order', () => {
+  it('invokes registered module functions in order', async () => {
     const module = new RecordingModule();
     const engine = new ScriptEngine([module]);
 
-    engine.execute('test.ping(42); test.flag(true);');
+    await engine.execute('test.ping(42); test.flag(true);');
 
     expect(module.calls).toStrictEqual([
       { method: 'ping', values: [42] },
@@ -46,30 +46,30 @@ describe('ScriptEngine', () => {
     expect(commands[0]).toMatchObject({ module: 'test', method: 'ping' });
   });
 
-  it('throws when a module is missing', () => {
+  it('throws when a module is missing', async () => {
     const engine = new ScriptEngine();
-    expect(() => engine.execute('nope.call(1)')).toThrow(ScriptRuntimeError);
+    await expect(engine.execute('nope.call(1)')).rejects.toThrow(ScriptRuntimeError);
   });
 
-  it('throws when a function is missing', () => {
+  it('throws when a function is missing', async () => {
     const module = new RecordingModule();
     const engine = new ScriptEngine([module]);
-    expect(() => engine.execute('test.unknown(1)')).toThrow(ScriptRuntimeError);
+    await expect(engine.execute('test.unknown(1)')).rejects.toThrow(ScriptRuntimeError);
   });
 
-  it('throws when arguments are missing or extra', () => {
-    const module = new RecordingModule();
-    const engine = new ScriptEngine([module]);
-
-    expect(() => engine.execute('test.ping()')).toThrow(ScriptRuntimeError);
-    expect(() => engine.execute('test.ping(1, 2)')).toThrow(ScriptRuntimeError);
-  });
-
-  it('throws when argument types do not match', () => {
+  it('throws when arguments are missing or extra', async () => {
     const module = new RecordingModule();
     const engine = new ScriptEngine([module]);
 
-    expect(() => engine.execute('test.ping(true)')).toThrow(ScriptRuntimeError);
-    expect(() => engine.execute('test.flag(1)')).toThrow(ScriptRuntimeError);
+    await expect(engine.execute('test.ping()')).rejects.toThrow(ScriptRuntimeError);
+    await expect(engine.execute('test.ping(1, 2)')).rejects.toThrow(ScriptRuntimeError);
+  });
+
+  it('throws when argument types do not match', async () => {
+    const module = new RecordingModule();
+    const engine = new ScriptEngine([module]);
+
+    await expect(engine.execute('test.ping(true)')).rejects.toThrow(ScriptRuntimeError);
+    await expect(engine.execute('test.flag(1)')).rejects.toThrow(ScriptRuntimeError);
   });
 });
