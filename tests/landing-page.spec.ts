@@ -43,6 +43,10 @@ test('world layout renders, panel resizes, and collapse state persists', async (
   await expect(modulesSection).toContainText('Vector Drive');
   await expect(lifecycleSection).toContainText('Last heartbeat');
   await expect(telemetrySection).toContainText('Battery');
+  const scriptConsole = page.getByTestId('bot-script-console');
+  const scriptEditor = page.getByTestId('bot-script-editor');
+  await expect(scriptConsole).toBeVisible();
+  await expect(scriptEditor).toHaveValue(/motor\.forward/);
 
   await entities.nth(1).click();
 

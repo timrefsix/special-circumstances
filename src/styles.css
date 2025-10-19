@@ -426,6 +426,177 @@ main.app-shell {
   display: none;
 }
 
+.script-console {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  background: rgba(15, 23, 42, 0.62);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 12px;
+  padding: 1rem;
+}
+
+.script-console__intro {
+  margin: 0;
+  font-size: 0.85rem;
+  color: rgba(226, 232, 240, 0.85);
+}
+
+.script-console__editor {
+  width: 100%;
+  min-height: 160px;
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 10px;
+  color: rgba(226, 232, 240, 0.92);
+  font-family: 'JetBrains Mono', 'Fira Code', 'SFMono-Regular', ui-monospace, monospace;
+  font-size: 0.85rem;
+  padding: 0.75rem 0.85rem;
+  resize: vertical;
+  line-height: 1.45;
+}
+
+.script-console__editor:focus {
+  outline: 2px solid rgba(96, 165, 250, 0.6);
+  outline-offset: 2px;
+  border-color: rgba(96, 165, 250, 0.4);
+}
+
+.script-console__actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.script-console__button {
+  border: 1px solid rgba(96, 165, 250, 0.55);
+  background: rgba(59, 130, 246, 0.25);
+  color: #dbeafe;
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 0.5rem 1.1rem;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.script-console__button:hover,
+.script-console__button:focus-visible {
+  background: rgba(96, 165, 250, 0.35);
+  border-color: rgba(147, 197, 253, 0.6);
+  color: #fff;
+}
+
+.script-console__button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+  background: rgba(59, 130, 246, 0.18);
+}
+
+.script-console__status {
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(148, 163, 184, 0.85);
+}
+
+.script-console__status--success {
+  color: rgba(74, 222, 128, 0.95);
+}
+
+.script-console__status--error {
+  color: rgba(248, 113, 113, 0.95);
+}
+
+.script-console__summary {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+  color: rgba(226, 232, 240, 0.88);
+}
+
+.script-console__summary li {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.script-console__reference {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.script-console__reference-title {
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(148, 163, 184, 0.75);
+}
+
+.script-console__reference-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 0.75rem;
+}
+
+.script-console__reference-section {
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  border-radius: 10px;
+  padding: 0.6rem 0.75rem;
+  background: rgba(15, 23, 42, 0.52);
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.script-console__reference-module {
+  font-size: 0.75rem;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: rgba(191, 219, 254, 0.95);
+}
+
+.script-console__reference-section ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.script-console__reference-section li {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  font-size: 0.78rem;
+  color: rgba(203, 213, 225, 0.88);
+}
+
+.script-console__reference-section code {
+  font-family: 'JetBrains Mono', 'Fira Code', 'SFMono-Regular', ui-monospace, monospace;
+  background: rgba(15, 23, 42, 0.85);
+  border-radius: 6px;
+  padding: 0.2rem 0.35rem;
+  color: rgba(147, 197, 253, 0.95);
+  font-size: 0.75rem;
+}
+
+.script-console__reference-section span {
+  color: rgba(148, 163, 184, 0.82);
+  font-size: 0.72rem;
+  line-height: 1.45;
+}
+
 .world-view,
 .panel-body {
   scrollbar-width: thin;

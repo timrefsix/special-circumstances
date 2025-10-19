@@ -19,12 +19,25 @@ import {
 import type { WorldEntity } from './types/entity';
 import { EntityDetails } from './components/EntityDetails';
 import { TelemetryInspector } from './components/TelemetryInspector';
+import { BotScriptConsole } from './components/BotScriptConsole';
+import { createBotScriptEnvironment } from './scripting/environment';
+import type { BotScriptState } from './types/botScript';
 
 const PANEL_STORAGE_KEY = 'ui.panelCollapsed';
 const PANEL_WIDTH_STORAGE_KEY = 'ui.panelWidth';
 const DEFAULT_PANEL_WIDTH = 320;
 const MIN_PANEL_WIDTH = 240;
 const MAX_PANEL_WIDTH = 520;
+const DEFAULT_BOT_SCRIPT = `motor.forward(6)
+motor.left(90)
+motor.forward(3)
+debug.pen(true)
+debug.color(#ff3366)`;
+
+const createDefaultBotScriptState = (): BotScriptState => ({
+  source: DEFAULT_BOT_SCRIPT,
+  lastRun: { status: 'idle' },
+});
 
 const clampWidth = (value: number) => {
   return Math.min(Math.max(value, MIN_PANEL_WIDTH), MAX_PANEL_WIDTH);
@@ -101,6 +114,7 @@ const App = () => {
     return seed.length > 0 ? seed[0]![1].id : null;
   });
   const [inspectorOpen, setInspectorOpen] = useState(false);
+  const [botScripts, setBotScripts] = useState<Record<string, BotScriptState>>({});
 
   const tickController = useMemo(() => {
     const controller = new TickController(world);
@@ -118,6 +132,33 @@ const App = () => {
 
     return entities.find((entity) => entity.id === selectedEntityId) ?? null;
   }, [entities, selectedEntityId]);
+
+  const selectedEntityHandle = useMemo(() => {
+    if (!selectedEntityId) {
+      return null;
+    }
+
+    const results = world.query([Identity] as const);
+    for (const [entity, identity] of results) {
+      if (identity.id === selectedEntityId) {
+        return entity;
+      }
+    }
+
+    return null;
+  }, [world, selectedEntityId]);
+
+  const selectedScriptState = useMemo(() => {
+    if (!selectedEntityId) {
+      return null;
+    }
+
+    return botScripts[selectedEntityId] ?? createDefaultBotScriptState();
+  }, [botScripts, selectedEntityId]);
+
+  const canRunScript =
+    Boolean(selectedEntityHandle) &&
+    Boolean(selectedScriptState && selectedScriptState.source.trim().length > 0);
 
   useEffect(() => {
     const shell = shellRef.current;
@@ -161,6 +202,96 @@ const App = () => {
       document.body.style.removeProperty('cursor');
     };
   }, []);
+
+  const handleBotScriptChange = useCallback((entityId: string, nextSource: string) => {
+    setBotScripts((current) => {
+      const existing = current[entityId];
+      if (existing && existing.source === nextSource && existing.lastRun.status === 'idle') {
+        return current;
+      }
+
+      return {
+        ...current,
+        [entityId]: {
+          source: nextSource,
+          lastRun: { status: 'idle' },
+        },
+      };
+    });
+  }, []);
+
+  const handleRunBotScript = useCallback(() => {
+    if (!selectedEntityId || !selectedEntityHandle || !selectedScriptState) {
+      return;
+    }
+
+    const source = selectedScriptState.source;
+    const trimmed = source.trim();
+
+    if (trimmed.length === 0) {
+      const timestamp = Date.now();
+      setBotScripts((current) => ({
+        ...current,
+        [selectedEntityId]: {
+          source,
+          lastRun: {
+            status: 'error',
+            timestamp,
+            message: 'Add at least one command before running the script.',
+          },
+        },
+      }));
+      return;
+    }
+
+    try {
+      const environment = createBotScriptEnvironment(world, selectedEntityHandle);
+      environment.engine.execute(source);
+
+      const positionComponent = world.getComponent(selectedEntityHandle, Position);
+      if (!positionComponent) {
+        throw new Error('Position component is missing after script execution.');
+      }
+
+      const timestamp = Date.now();
+      const heading = environment.modules.motor.getHeading();
+      const debugSnapshot = {
+        penDown: environment.modules.debug.isPenDown(),
+        color: environment.modules.debug.getColor(),
+        history: environment.modules.debug.getHistory(),
+      };
+
+      setBotScripts((current) => ({
+        ...current,
+        [selectedEntityId]: {
+          source,
+          lastRun: {
+            status: 'success',
+            timestamp,
+            heading,
+            position: { x: positionComponent.x, y: positionComponent.y },
+            debug: debugSnapshot,
+          },
+        },
+      }));
+    } catch (error) {
+      const timestamp = Date.now();
+      const message =
+        error instanceof Error ? error.message : 'Unknown error while running the script.';
+
+      setBotScripts((current) => ({
+        ...current,
+        [selectedEntityId]: {
+          source,
+          lastRun: {
+            status: 'error',
+            timestamp,
+            message,
+          },
+        },
+      }));
+    }
+  }, [selectedEntityHandle, selectedEntityId, selectedScriptState, world]);
 
   const finishResize = useCallback((event: ReactPointerEvent<HTMLDivElement>) => {
     if (!isResizingRef.current) {
@@ -283,6 +414,20 @@ const App = () => {
     );
   };
 
+  const scriptConsole =
+    selectedEntity && selectedScriptState
+      ? (
+          <BotScriptConsole
+            entityName={selectedEntity.name}
+            script={selectedScriptState.source}
+            status={selectedScriptState.lastRun}
+            canRun={canRunScript}
+            onScriptChange={(value) => handleBotScriptChange(selectedEntity.id, value)}
+            onRun={handleRunBotScript}
+          />
+        )
+      : null;
+
   return (
     <>
       <main ref={shellRef} className="app-shell" data-testid="app-shell">
@@ -321,6 +466,7 @@ const App = () => {
           collapsed={collapsed}
           panelClassName={panelClassName}
           selectedEntity={selectedEntity}
+          actionPanel={scriptConsole}
         />
       </main>
       {telemetry ? (

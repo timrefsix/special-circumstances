@@ -1,9 +1,11 @@
+import type { ReactNode } from 'react';
 import type { WorldEntity } from '../types/entity';
 
 interface EntityDetailsProps {
   collapsed: boolean;
   panelClassName: string;
   selectedEntity: WorldEntity | null;
+  actionPanel?: ReactNode;
 }
 
 const formatUptime = (seconds: number) => {
@@ -22,7 +24,12 @@ const formatUptime = (seconds: number) => {
   return `${seconds}s`;
 };
 
-export const EntityDetails = ({ collapsed, panelClassName, selectedEntity }: EntityDetailsProps) => (
+export const EntityDetails = ({
+  collapsed,
+  panelClassName,
+  selectedEntity,
+  actionPanel,
+}: EntityDetailsProps) => (
   <aside className={panelClassName} data-testid="info-panel" aria-hidden={collapsed}>
     <header className="panel-header">
       <h2 className="panel-title">Entity Details</h2>
@@ -85,9 +92,13 @@ export const EntityDetails = ({ collapsed, panelClassName, selectedEntity }: Ent
               </div>
             </dl>
           </div>
-          <div className="panel-section panel-placeholder" data-testid="selection-actions">
+          <div className="panel-section" data-testid="selection-actions">
             <h3 className="panel-section__title">Actions</h3>
-            <p>Action controls will appear here once scripting commands are wired in.</p>
+            {actionPanel ?? (
+              <p className="panel-placeholder">
+                Action controls will appear here once scripting commands are wired in.
+              </p>
+            )}
           </div>
         </>
       ) : null}
