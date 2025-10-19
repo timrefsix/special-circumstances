@@ -1,4 +1,4 @@
-import { Identity, Position, Status } from './components';
+import { Identity, Lifecycle, Modules, Position, Status, Telemetry } from './components';
 import { World } from './world';
 import { mockEntities } from '../data/mockEntities';
 
@@ -17,6 +17,15 @@ export const createWorldWithMockEntities = () => {
     });
     world.addComponent(worldEntity, Status, {
       value: entity.status,
+    });
+    world.addComponent(worldEntity, Modules, {
+      items: entity.modules,
+    });
+    world.addComponent(worldEntity, Lifecycle, {
+      value: entity.lifecycle,
+    });
+    world.addComponent(worldEntity, Telemetry, {
+      value: entity.telemetry,
     });
   }
 

@@ -1,6 +1,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { PointerEvent as ReactPointerEvent } from 'react';
-import { createWorldWithMockEntities, Identity, Position, Status, useEcsQuery } from './ecs';
+import {
+  createWorldWithMockEntities,
+  Identity,
+  Lifecycle,
+  Modules,
+  Position,
+  Status,
+  Telemetry,
+  useEcsQuery,
+} from './ecs';
 import type { WorldEntity } from './types/entity';
 import { EntityDetails } from './components/EntityDetails';
 
@@ -56,15 +65,21 @@ const App = () => {
   const resizeStartWidthRef = useRef(DEFAULT_PANEL_WIDTH);
 
   const world = useMemo(() => createWorldWithMockEntities(), []);
-  const entityComponents = useMemo(() => [Identity, Position, Status] as const, []);
+  const entityComponents = useMemo(
+    () => [Identity, Position, Status, Modules, Lifecycle, Telemetry] as const,
+    [],
+  );
   const entities = useEcsQuery(
     world,
     entityComponents,
-    (_, identity, position, status): WorldEntity => ({
+    (_, identity, position, status, modules, lifecycle, telemetry): WorldEntity => ({
       id: identity.id,
       name: identity.name,
       position: { x: position.x, y: position.y },
       status: status.value,
+      modules: modules.items,
+      lifecycle: lifecycle.value,
+      telemetry: telemetry.value,
     }),
   );
 
