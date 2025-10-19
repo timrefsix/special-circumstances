@@ -1,0 +1,26 @@
+services:
+  app:
+    image: node:20
+    working_dir: /workspace
+    command: bash -lc "npm install && npm run dev -- --host=0.0.0.0 --port=5173 --strictPort"
+    environment:
+      - VITE_DEV_HOST=special-circumstances-scripting.localhost
+      - VITE_DEV_PORT=5173
+      - CHOKIDAR_USEPOLLING=1
+    volumes:
+      - .:/workspace
+      - node_modules_cache:/workspace/node_modules
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.special-circumstances-scripting.rule=Host(`special-circumstances-scripting.localhost`)"
+      - "traefik.http.routers.special-circumstances-scripting.entrypoints=web"
+      - "traefik.http.services.special-circumstances-scripting.loadbalancer.server.port=5173"
+    networks:
+      - devproxy
+
+volumes:
+  node_modules_cache:
+
+networks:
+  devproxy:
+    external: true
