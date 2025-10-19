@@ -1,4 +1,6 @@
-
-# Git worktrees (Crystal)
-/worktrees/
-/worktree-*/
+node_modules/
+dist/
+test-results/
+*.log
+.DS_Store
+.vscode/
