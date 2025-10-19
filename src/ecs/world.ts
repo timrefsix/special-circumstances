@@ -1,3 +1,10 @@
+import type {
+  ComponentChangeType,
+  ComponentSnapshot,
+  SystemRunEvent,
+  WorldObserver,
+} from './observer';
+
 export type Entity = number;
 
 export interface ComponentType<T> {
@@ -11,6 +18,10 @@ type ComponentTuple<T extends readonly ComponentType<any>[]> = {
 
 type Listener = () => void;
 
+export interface WorldOptions {
+  instrumentation?: boolean;
+}
+
 export const defineComponent = <T>(name: string): ComponentType<T> => {
   return {
     name,
@@ -21,14 +32,26 @@ export const defineComponent = <T>(name: string): ComponentType<T> => {
 export class World {
   private nextEntityId = 1;
   private readonly componentStores = new Map<symbol, Map<Entity, unknown>>();
+  private readonly componentRegistry = new Map<symbol, ComponentType<any>>();
   private readonly entityComponents = new Map<Entity, Set<symbol>>();
   private readonly listeners = new Set<Listener>();
   private version = 0;
+  private readonly observers = new Set<WorldObserver>();
+  private readonly instrumentationEnabled: boolean;
+
+  constructor(options: WorldOptions = {}) {
+    const defaultInstrumentation =
+      ((import.meta as any).env?.DEV as boolean | undefined) ??
+      (typeof process !== 'undefined' ? process.env?.NODE_ENV !== 'production' : false);
+
+    this.instrumentationEnabled = options.instrumentation ?? Boolean(defaultInstrumentation);
+  }
 
   createEntity(): Entity {
     const entity = this.nextEntityId;
     this.nextEntityId += 1;
     this.entityComponents.set(entity, new Set());
+    this.emitEntityCreated(entity);
     this.emitChange();
     return entity;
   }
@@ -39,12 +62,23 @@ export class World {
       return;
     }
 
+    const snapshot: ComponentSnapshot[] = [];
+
     for (const componentKey of components) {
       const store = this.componentStores.get(componentKey);
+      const value = store?.get(entity);
+      const componentType = this.componentRegistry.get(componentKey);
+      if (componentType) {
+        snapshot.push({
+          component: componentType,
+          value,
+        });
+      }
       store?.delete(entity);
     }
 
     this.entityComponents.delete(entity);
+    this.emitEntityDestroyed(entity, snapshot);
     this.emitChange();
   }
 
@@ -59,6 +93,8 @@ export class World {
 
     store.set(entity, data);
     this.entityComponents.get(entity)?.add(componentType.key);
+    const changeType: ComponentChangeType = existing === undefined ? 'added' : 'updated';
+    this.emitComponentChanged(changeType, entity, componentType, existing, data);
     this.emitChange();
   }
 
@@ -70,9 +106,11 @@ export class World {
       return;
     }
 
+    const previous = store.get(entity) as T | undefined;
     store.delete(entity);
     const components = this.entityComponents.get(entity);
     components?.delete(componentType.key);
+    this.emitComponentChanged('removed', entity, componentType, previous, null);
     this.emitChange();
   }
 
@@ -139,6 +177,21 @@ export class World {
     return this.version;
   }
 
+  observe(observer: WorldObserver): () => void {
+    if (!this.instrumentationEnabled) {
+      return () => {};
+    }
+
+    this.observers.add(observer);
+    return () => {
+      this.observers.delete(observer);
+    };
+  }
+
+  reportSystemRun(event: Omit<SystemRunEvent, 'timestamp'>) {
+    this.emitSystemRun(event);
+  }
+
   private ensureStore<T>(componentType: ComponentType<T>) {
     const existing = this.componentStores.get(componentType.key);
     if (existing) {
@@ -147,6 +200,9 @@ export class World {
 
     const store = new Map<Entity, T>();
     this.componentStores.set(componentType.key, store);
+    if (!this.componentRegistry.has(componentType.key)) {
+      this.componentRegistry.set(componentType.key, componentType);
+    }
     return store;
   }
 
@@ -165,5 +221,88 @@ export class World {
     for (const listener of this.listeners) {
       listener();
     }
+  }
+
+  private emitEntityCreated(entity: Entity) {
+    if (!this.shouldNotifyObservers()) {
+      return;
+    }
+
+    const timestamp = this.now();
+    for (const observer of this.observers) {
+      observer.onEntityCreated?.({
+        type: 'entity-created',
+        entity,
+        timestamp,
+      });
+    }
+  }
+
+  private emitEntityDestroyed(entity: Entity, components: ComponentSnapshot[]) {
+    if (!this.shouldNotifyObservers()) {
+      return;
+    }
+
+    const timestamp = this.now();
+    for (const observer of this.observers) {
+      observer.onEntityDestroyed?.({
+        type: 'entity-destroyed',
+        entity,
+        components,
+        timestamp,
+      });
+    }
+  }
+
+  private emitComponentChanged(
+    changeType: ComponentChangeType,
+    entity: Entity,
+    component: ComponentType<any>,
+    previousValue: unknown,
+    value: unknown,
+  ) {
+    if (!this.shouldNotifyObservers()) {
+      return;
+    }
+
+    const timestamp = this.now();
+    for (const observer of this.observers) {
+      observer.onComponentChanged?.({
+        type: 'component-changed',
+        changeType,
+        entity,
+        component,
+        previousValue,
+        value,
+        timestamp,
+      });
+    }
+  }
+
+  private emitSystemRun(event: Omit<SystemRunEvent, 'timestamp'>) {
+    if (!this.shouldNotifyObservers()) {
+      return;
+    }
+
+    const timestamp = this.now();
+    for (const observer of this.observers) {
+      observer.onSystemRun?.({
+        ...event,
+        type: 'system-run',
+        timestamp,
+      });
+    }
+  }
+
+  private shouldNotifyObservers() {
+    return this.instrumentationEnabled && this.observers.size > 0;
+  }
+
+  private now() {
+    if (typeof performance !== 'undefined' && typeof performance.now === 'function') {
+      return performance.now();
+    }
+
+    return Date.now();
   }
 }

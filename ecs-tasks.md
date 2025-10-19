@@ -1,15 +1,27 @@
 # ECS Dev Tooling Tasks
 
 ## 1. Lightweight Observer Foundation
-- Add optional instrumentation hooks inside `World` (`onEntityCreated`, `onComponentChanged`, `onSystemRun` etc.).
-- Emit structured events with timestamps and payloads; guard behind dev-only flag to avoid prod overhead.
-- Provide typed observer interface and registration API (`world.observe(observer)`).
-- Document event contract and lifecycle ordering.
+- [x] Add optional instrumentation hooks inside `World` (`onEntityCreated`, `onComponentChanged`, `onSystemRun` etc.).
+- [x] Emit structured events with timestamps and payloads; guard behind dev-only flag to avoid prod overhead.
+- [x] Provide typed observer interface and registration API (`world.observe(observer)`).
+- [x] Document event contract and lifecycle ordering.
+
+### Event Contract
+- `entity-created` fires immediately after `createEntity` allocates the id and before change listeners run.
+- `component-changed` emits for `added`, `updated`, and `removed` transitions with current and previous payloads.
+- `entity-destroyed` triggers after components are detached and includes the removed components snapshot.
+- `system-run` records explicit invocations of `world.reportSystemRun`, carrying phase, tick, and timing metadata.
+- Events always include a high-resolution timestamp (falling back to `Date.now()` outside the browser).
 
 ## 2. Instrumentation Adapters
-- Create standalone observable stream (e.g., simple event emitter) that buffers the last N events.
-- Expose helper utilities for aggregations (e.g., per-system durations, per-entity mutation counts).
-- Wire adapters into any existing tick loop once available.
+- [x] Create standalone observable stream (e.g., simple event emitter) that buffers the last N events.
+- [x] Expose helper utilities for aggregations (e.g., per-system durations, per-entity mutation counts).
+- [ ] Wire adapters into any existing tick loop once available.
+
+### Telemetry Adapter Notes
+- `createWorldTelemetry` wraps `world.observe` to buffer events (default 200) and surfaces stats (`componentChanges`, `entityEventCounts`, `systemRuns`).
+- Snapshots retain the total event count even when the ring buffer evicts older entries, enabling downstream deltas.
+- Consumers can subscribe for updates, clear/reset the buffer, and dispose the adapter to release observers.
 
 ## 3. Inspector Overlay UI
 - Scaffold React overlay panel toggled via keyboard shortcut.

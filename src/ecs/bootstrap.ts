@@ -1,10 +1,53 @@
 import { Identity, Lifecycle, Modules, Position, Status, Telemetry } from './components';
 import { World } from './world';
+import type { WorldOptions } from './world';
+import {
+  createWorldTelemetry,
+  type WorldTelemetry,
+  type WorldTelemetryOptions,
+} from './telemetry';
 import { mockEntities } from '../data/mockEntities';
 
-export const createWorldWithMockEntities = () => {
-  const world = new World();
+export interface MockWorldOptions extends WorldOptions {
+  telemetry?: boolean | WorldTelemetryOptions;
+}
 
+export interface MockWorldEnvironment {
+  world: World;
+  telemetry?: WorldTelemetry;
+}
+
+export const createWorldWithMockEntities = (options: WorldOptions = {}) => {
+  const world = new World(options);
+  populateMockWorld(world);
+  return world;
+};
+
+export const createMockWorldEnvironment = (
+  options: MockWorldOptions = {},
+): MockWorldEnvironment => {
+  const { telemetry, ...worldOptions } = options;
+  const world = new World(worldOptions);
+  let telemetryInstance: WorldTelemetry | undefined;
+
+  if (telemetry) {
+    const telemetryOptions = telemetry === true ? undefined : telemetry;
+    telemetryInstance = createWorldTelemetry(world, telemetryOptions);
+  }
+
+  populateMockWorld(world);
+
+  if (telemetryInstance) {
+    return {
+      world,
+      telemetry: telemetryInstance,
+    };
+  }
+
+  return { world };
+};
+
+const populateMockWorld = (world: World) => {
   for (const entity of mockEntities) {
     const worldEntity = world.createEntity();
     world.addComponent(worldEntity, Identity, {
@@ -28,6 +71,4 @@ export const createWorldWithMockEntities = () => {
       value: entity.telemetry,
     });
   }
-
-  return world;
 };
