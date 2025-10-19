@@ -1,3 +1,4 @@
+import { useSyncExternalStore } from 'react';
 import type {
   ComponentChangedEvent,
   SystemRunEvent,
@@ -56,6 +57,21 @@ export const createWorldTelemetry = (
   const systemStats = new Map<string, SystemRunStats>();
   const listeners = new Set<Listener>();
   let totalEvents = 0;
+  let snapshot: WorldTelemetrySnapshot = {
+    events: [],
+    totalEvents: 0,
+    componentChanges: {},
+    entityEventCounts: {},
+    systemRuns: {},
+  };
+
+  const buildSnapshot = (): WorldTelemetrySnapshot => ({
+    events: events.slice(),
+    totalEvents,
+    componentChanges: getComponentChangesRecord(),
+    entityEventCounts: getEntityCountsRecord(),
+    systemRuns: getSystemStatsRecord(),
+  });
 
   const recordEvent = (event: WorldEvent) => {
     totalEvents += 1;
@@ -158,6 +174,7 @@ export const createWorldTelemetry = (
   };
 
   const notify = () => {
+    snapshot = buildSnapshot();
     for (const listener of listeners) {
       listener();
     }
@@ -171,13 +188,7 @@ export const createWorldTelemetry = (
   });
 
   const getSnapshot = (): WorldTelemetrySnapshot => {
-    return {
-      events: events.slice(),
-      totalEvents,
-      componentChanges: getComponentChangesRecord(),
-      entityEventCounts: getEntityCountsRecord(),
-      systemRuns: getSystemStatsRecord(),
-    };
+    return snapshot;
   };
 
   const subscribe = (listener: Listener) => {
@@ -226,10 +237,36 @@ export const createWorldTelemetry = (
     return result;
   };
 
+  snapshot = buildSnapshot();
+
   return {
     getSnapshot,
     subscribe,
     clear,
     dispose,
   };
+};
+
+const EMPTY_SNAPSHOT: WorldTelemetrySnapshot = {
+  events: [],
+  totalEvents: 0,
+  componentChanges: {},
+  entityEventCounts: {},
+  systemRuns: {},
+};
+
+export const useWorldTelemetrySnapshot = (telemetry?: WorldTelemetry) => {
+  const subscribe = (listener: Listener) => {
+    if (!telemetry) {
+      return () => {};
+    }
+
+    return telemetry.subscribe(listener);
+  };
+
+  const getSnapshot = () => {
+    return telemetry ? telemetry.getSnapshot() : EMPTY_SNAPSHOT;
+  };
+
+  return useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
 };

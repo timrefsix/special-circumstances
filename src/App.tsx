@@ -1,17 +1,24 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { PointerEvent as ReactPointerEvent } from 'react';
 import {
-  createWorldWithMockEntities,
   Identity,
   Lifecycle,
   Modules,
   Position,
   Status,
   Telemetry,
+  createMockWorldEnvironment,
   useEcsQuery,
 } from './ecs';
+import { TickController } from './ecs/runtime';
+import {
+  createLifecycleSystem,
+  createStatusFromTelemetrySystem,
+  createTelemetrySystem,
+} from './ecs/systems';
 import type { WorldEntity } from './types/entity';
 import { EntityDetails } from './components/EntityDetails';
+import { TelemetryInspector } from './components/TelemetryInspector';
 
 const PANEL_STORAGE_KEY = 'ui.panelCollapsed';
 const PANEL_WIDTH_STORAGE_KEY = 'ui.panelWidth';
@@ -64,7 +71,11 @@ const App = () => {
   const resizeStartXRef = useRef(0);
   const resizeStartWidthRef = useRef(DEFAULT_PANEL_WIDTH);
 
-  const world = useMemo(() => createWorldWithMockEntities(), []);
+  const environment = useMemo(
+    () => createMockWorldEnvironment({ telemetry: true, instrumentation: true }),
+    [],
+  );
+  const { world, telemetry } = environment;
   const entityComponents = useMemo(
     () => [Identity, Position, Status, Modules, Lifecycle, Telemetry] as const,
     [],
@@ -89,6 +100,15 @@ const App = () => {
     const seed = world.query([Identity] as const);
     return seed.length > 0 ? seed[0]![1].id : null;
   });
+  const [inspectorOpen, setInspectorOpen] = useState(false);
+
+  const tickController = useMemo(() => {
+    const controller = new TickController(world);
+    controller.register(createLifecycleSystem());
+    controller.register(createTelemetrySystem());
+    controller.register(createStatusFromTelemetrySystem());
+    return controller;
+  }, [world]);
 
   const panelWidthForStyle = useMemo(() => (collapsed ? 0 : panelWidth), [collapsed, panelWidth]);
   const selectedEntity = useMemo(() => {
@@ -115,6 +135,13 @@ const App = () => {
       // no-op if storage is unavailable
     }
   }, [collapsed]);
+
+  useEffect(() => {
+    tickController.start();
+    return () => {
+      tickController.stop();
+    };
+  }, [tickController]);
 
   useEffect(() => {
     if (collapsed) {
@@ -220,6 +247,10 @@ const App = () => {
     setCollapsed((current) => !current);
   }, []);
 
+  const toggleInspector = useCallback(() => {
+    setInspectorOpen((current) => !current);
+  }, []);
+
   const edgeClassName = collapsed ? 'panel-edge collapsed' : 'panel-edge';
   const handleClassName = collapsed ? 'panel-resize-handle is-inactive' : 'panel-resize-handle';
   const panelClassName = collapsed ? 'info-panel collapsed' : 'info-panel';
@@ -253,44 +284,64 @@ const App = () => {
   };
 
   return (
-    <main ref={shellRef} className="app-shell" data-testid="app-shell">
-      <section className="world-view" aria-label="World viewport" data-testid="world-view">
-        <div className="world-surface" data-testid="world-surface">
-          <div className="world-grid" aria-hidden="true" />
-          {entities.map(renderEntity)}
+    <>
+      <main ref={shellRef} className="app-shell" data-testid="app-shell">
+        <section className="world-view" aria-label="World viewport" data-testid="world-view">
+          <div className="world-surface" data-testid="world-surface">
+            <div className="world-grid" aria-hidden="true" />
+            {entities.map(renderEntity)}
+          </div>
+        </section>
+        <div className={edgeClassName} data-testid="panel-edge">
+          <div
+            role="separator"
+            aria-label="Resize details panel"
+            aria-orientation="vertical"
+            data-testid="panel-resize-handle"
+            tabIndex={-1}
+            className={handleClassName}
+            onPointerDown={handlePointerDown}
+            onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerUp}
+            onPointerCancel={handlePointerCancel}
+            onLostPointerCapture={handleLostPointerCapture}
+          />
+          <button
+            type="button"
+            data-role="panel-toggle"
+            data-testid="panel-toggle"
+            aria-controls="panel-body"
+            aria-expanded={!collapsed}
+            aria-label={collapsed ? 'Expand details panel' : 'Collapse details panel'}
+            className="panel-toggle"
+            onClick={toggleCollapsed}
+          />
         </div>
-      </section>
-      <div className={edgeClassName} data-testid="panel-edge">
-        <div
-          role="separator"
-          aria-label="Resize details panel"
-          aria-orientation="vertical"
-          data-testid="panel-resize-handle"
-          tabIndex={-1}
-          className={handleClassName}
-          onPointerDown={handlePointerDown}
-          onPointerMove={handlePointerMove}
-          onPointerUp={handlePointerUp}
-          onPointerCancel={handlePointerCancel}
-          onLostPointerCapture={handleLostPointerCapture}
+        <EntityDetails
+          collapsed={collapsed}
+          panelClassName={panelClassName}
+          selectedEntity={selectedEntity}
         />
-        <button
-          type="button"
-          data-role="panel-toggle"
-          data-testid="panel-toggle"
-          aria-controls="panel-body"
-          aria-expanded={!collapsed}
-          aria-label={collapsed ? 'Expand details panel' : 'Collapse details panel'}
-          className="panel-toggle"
-          onClick={toggleCollapsed}
-        />
-      </div>
-      <EntityDetails
-        collapsed={collapsed}
-        panelClassName={panelClassName}
-        selectedEntity={selectedEntity}
-      />
-    </main>
+      </main>
+      {telemetry ? (
+        <>
+          <button
+            type="button"
+            className="dev-inspector__toggle"
+            data-testid="inspector-toggle"
+            onClick={toggleInspector}
+          >
+            {inspectorOpen ? 'Hide Inspector' : 'Show Inspector'}
+          </button>
+          <TelemetryInspector
+            open={inspectorOpen}
+            telemetry={telemetry}
+            world={world}
+            onRequestClose={toggleInspector}
+          />
+        </>
+      ) : null}
+    </>
   );
 };
 

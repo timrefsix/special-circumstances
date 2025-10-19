@@ -16,7 +16,7 @@
 ## 2. Instrumentation Adapters
 - [x] Create standalone observable stream (e.g., simple event emitter) that buffers the last N events.
 - [x] Expose helper utilities for aggregations (e.g., per-system durations, per-entity mutation counts).
-- [ ] Wire adapters into any existing tick loop once available.
+- [x] Wire adapters into any existing tick loop once available.
 
 ### Telemetry Adapter Notes
 - `createWorldTelemetry` wraps `world.observe` to buffer events (default 200) and surfaces stats (`componentChanges`, `entityEventCounts`, `systemRuns`).
@@ -24,10 +24,10 @@
 - Consumers can subscribe for updates, clear/reset the buffer, and dispose the adapter to release observers.
 
 ## 3. Inspector Overlay UI
-- Scaffold React overlay panel toggled via keyboard shortcut.
-- List entities, their components, and raw component data sourced from observer stream.
-- Add pinning to focus on a single entity with live updates.
-- Persist inspector visibility and pinned entity between reloads.
+- [x] Scaffold React overlay panel toggled via UI control.
+- [x] List recent events, entity activity, and system stats sourced from telemetry stream.
+- [ ] Add pinning to focus on a single entity with live updates.
+- [ ] Persist inspector visibility and pinned entity between reloads.
 
 ## 4. System Timeline View
 - Capture system execution events and render a per-tick waterfall chart (Tick N rows, system spans).

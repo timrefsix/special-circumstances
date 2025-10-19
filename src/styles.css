@@ -430,3 +430,163 @@ main.app-shell {
 .panel-body {
   scrollbar-width: thin;
 }
+
+.dev-inspector__toggle {
+  position: fixed;
+  right: 1.5rem;
+  bottom: 1.5rem;
+  z-index: 60;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  background: rgba(15, 23, 42, 0.9);
+  color: rgba(226, 232, 240, 0.95);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 0.55rem 0.9rem;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.dev-inspector__toggle:hover,
+.dev-inspector__toggle:focus-visible {
+  background: rgba(30, 41, 59, 0.95);
+  color: #fff;
+}
+
+.dev-inspector {
+  position: fixed;
+  right: 1.5rem;
+  bottom: 3.75rem;
+  width: min(420px, calc(100vw - 3rem));
+  max-height: min(520px, calc(100vh - 4rem));
+  display: flex;
+  flex-direction: column;
+  background: rgba(15, 23, 42, 0.96);
+  border: 1px solid rgba(100, 116, 139, 0.4);
+  border-radius: 16px;
+  box-shadow: 0 20px 70px rgba(2, 6, 23, 0.55);
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(12px);
+  transition: opacity 0.18s ease, transform 0.18s ease;
+  z-index: 55;
+}
+
+.dev-inspector.is-open {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+.dev-inspector__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid rgba(100, 116, 139, 0.35);
+  background: rgba(10, 12, 21, 0.8);
+}
+
+.dev-inspector__title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(226, 232, 240, 0.9);
+}
+
+.dev-inspector__actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.dev-inspector__summary {
+  font-size: 0.75rem;
+  color: rgba(148, 163, 184, 0.85);
+}
+
+.dev-inspector__button {
+  border: 1px solid rgba(100, 116, 139, 0.4);
+  background: rgba(30, 41, 59, 0.65);
+  color: rgba(226, 232, 240, 0.95);
+  font-size: 0.75rem;
+  padding: 0.35rem 0.7rem;
+  border-radius: 8px;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.dev-inspector__button:hover,
+.dev-inspector__button:focus-visible {
+  background: rgba(51, 65, 85, 0.9);
+}
+
+.dev-inspector__body {
+  flex: 1;
+  display: grid;
+  grid-template-rows: repeat(3, minmax(0, auto));
+  gap: 0.75rem;
+  padding: 0.85rem 1rem 1.1rem;
+  overflow-y: auto;
+}
+
+.dev-inspector__section {
+  background: rgba(14, 23, 42, 0.6);
+  border: 1px solid rgba(100, 116, 139, 0.3);
+  border-radius: 12px;
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.dev-inspector__section-title {
+  margin: 0;
+  font-size: 0.8rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(148, 163, 184, 0.9);
+}
+
+.dev-inspector__empty {
+  margin: 0;
+  font-size: 0.75rem;
+  color: rgba(148, 163, 184, 0.75);
+}
+
+.dev-inspector__list,
+.dev-inspector__events {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.dev-inspector__list li,
+.dev-inspector__events li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.78rem;
+  color: rgba(226, 232, 240, 0.9);
+}
+
+.dev-inspector__events li {
+  justify-content: flex-start;
+}
+
+.dev-inspector__events li span {
+  font-size: 0.75rem;
+  color: rgba(226, 232, 240, 0.85);
+}
+
+.dev-inspector__metric {
+  font-variant-numeric: tabular-nums;
+  color: rgba(148, 163, 184, 0.85);
+}

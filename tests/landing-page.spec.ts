@@ -41,8 +41,8 @@ test('world layout renders, panel resizes, and collapse state persists', async (
   await expect(selectionStatus).toHaveText('moving');
   await expect(modulesSection).toContainText('WideScan Lidar');
   await expect(modulesSection).toContainText('Vector Drive');
-  await expect(lifecycleSection).toContainText('2.4s ago');
-  await expect(telemetrySection).toContainText('82%');
+  await expect(lifecycleSection).toContainText('Last heartbeat');
+  await expect(telemetrySection).toContainText('Battery');
 
   await entities.nth(1).click();
 
@@ -52,8 +52,8 @@ test('world layout renders, panel resizes, and collapse state persists', async (
   await expect(selectionStatus).toHaveText('idle');
   await expect(modulesSection).toContainText('Spectral Camera');
   await expect(modulesSection).not.toContainText('Vector Drive');
-  await expect(lifecycleSection).toContainText('0.9s ago');
-  await expect(telemetrySection).toContainText('64%');
+  await expect(lifecycleSection).toContainText('Uptime');
+  await expect(telemetrySection).toContainText('Temperature');
 
   const handleBox = await handle.boundingBox();
   if (!handleBox) {
@@ -144,4 +144,19 @@ test('world layout renders, panel resizes, and collapse state persists', async (
   await expect(page.getByTestId('selection-name')).toHaveText('Alpha Runner');
   await expect(page.getByTestId('selection-status')).toHaveText('moving');
   await expect(page.getByTestId('selection-modules')).toContainText('WideScan Lidar');
+
+  const inspectorToggle = page.getByTestId('inspector-toggle');
+  await inspectorToggle.click();
+
+  const inspector = page.getByTestId('telemetry-inspector');
+  await expect(inspector).toHaveClass(/is-open/);
+  await expect(inspector).toContainText('Telemetry Inspector');
+
+  await page.waitForTimeout(200);
+  const eventItems = inspector.locator('.dev-inspector__events li');
+  await expect(eventItems.first()).toBeVisible();
+
+  const closeButton = inspector.getByRole('button', { name: 'Close' });
+  await closeButton.click();
+  await expect(inspector).not.toHaveClass(/is-open/);
 });

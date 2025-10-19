@@ -162,4 +162,5 @@ test.describe('ECS world', () => {
     unsubscribeTelemetry();
     telemetry.dispose();
   });
+
 });
