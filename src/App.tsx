@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { PointerEvent as ReactPointerEvent } from 'react';
 import { mockEntities } from './data/mockEntities';
 import type { WorldEntity } from './types/entity';
+import { EntityDetails } from './components/EntityDetails';
 
 const PANEL_STORAGE_KEY = 'ui.panelCollapsed';
 const PANEL_WIDTH_STORAGE_KEY = 'ui.panelWidth';
@@ -256,26 +257,11 @@ const App = () => {
           onClick={toggleCollapsed}
         />
       </div>
-      <aside className={panelClassName} data-testid="info-panel" aria-hidden={collapsed}>
-        <header className="panel-header">
-          <h2 className="panel-title">Entity Details</h2>
-        </header>
-        <section className="panel-body" id="panel-body">
-          <p>Choose an entity in the world to inspect its modules and runtime state.</p>
-          <dl className="panel-selection">
-            <dt>Selection</dt>
-            <dd data-testid="selection-name">
-              {selectedEntity ? selectedEntity.name : 'No entity selected.'}
-            </dd>
-          </dl>
-          {selectedEntity ? (
-            <dl className="panel-selection">
-              <dt>Status</dt>
-              <dd data-testid="selection-status">{selectedEntity.status}</dd>
-            </dl>
-          ) : null}
-        </section>
-      </aside>
+      <EntityDetails
+        collapsed={collapsed}
+        panelClassName={panelClassName}
+        selectedEntity={selectedEntity}
+      />
     </main>
   );
 };

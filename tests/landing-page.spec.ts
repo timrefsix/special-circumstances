@@ -19,6 +19,9 @@ test('world layout renders, panel resizes, and collapse state persists', async (
   const handle = page.getByTestId('panel-resize-handle');
   const selectionName = page.getByTestId('selection-name');
   const selectionStatus = page.getByTestId('selection-status');
+  const modulesSection = page.getByTestId('selection-modules');
+  const lifecycleSection = page.getByTestId('selection-lifecycle');
+  const telemetrySection = page.getByTestId('selection-telemetry');
 
   await expect(shell).toBeVisible();
   await expect(world).toBeVisible();
@@ -36,6 +39,10 @@ test('world layout renders, panel resizes, and collapse state persists', async (
   await expect(entities.nth(0)).toHaveClass(/is-selected/);
   await expect(selectionName).toHaveText('Alpha Runner');
   await expect(selectionStatus).toHaveText('moving');
+  await expect(modulesSection).toContainText('WideScan Lidar');
+  await expect(modulesSection).toContainText('Vector Drive');
+  await expect(lifecycleSection).toContainText('2.4s ago');
+  await expect(telemetrySection).toContainText('82%');
 
   await entities.nth(1).click();
 
@@ -43,6 +50,10 @@ test('world layout renders, panel resizes, and collapse state persists', async (
   await expect(entities.nth(0)).not.toHaveClass(/is-selected/);
   await expect(selectionName).toHaveText('Bravo Scout');
   await expect(selectionStatus).toHaveText('idle');
+  await expect(modulesSection).toContainText('Spectral Camera');
+  await expect(modulesSection).not.toContainText('Vector Drive');
+  await expect(lifecycleSection).toContainText('0.9s ago');
+  await expect(telemetrySection).toContainText('64%');
 
   const handleBox = await handle.boundingBox();
   if (!handleBox) {
@@ -132,4 +143,5 @@ test('world layout renders, panel resizes, and collapse state persists', async (
   await expect(entitiesAfterReload.nth(0)).toHaveClass(/is-selected/);
   await expect(page.getByTestId('selection-name')).toHaveText('Alpha Runner');
   await expect(page.getByTestId('selection-status')).toHaveText('moving');
+  await expect(page.getByTestId('selection-modules')).toContainText('WideScan Lidar');
 });
